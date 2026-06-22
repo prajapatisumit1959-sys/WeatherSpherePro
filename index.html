@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WeatherSphere Pro — Live Weather Console & Forecast Dashboard</title>
+  <meta name="description"
+    content="WeatherSphere Pro is a real-time weather console with 7-day forecasts, hourly trends, air quality index, weather alerts and city comparison — built with vanilla JavaScript and the Open-Meteo API." />
+  <meta name="keywords"
+    content="weather dashboard, weather app, forecast, AQI, air quality index, weather console, JavaScript weather app" />
+  <meta name="author" content="WeatherSphere Pro" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="WeatherSphere Pro — Live Weather Console" />
+  <meta property="og:description"
+    content="A premium, instrument-grade weather dashboard with forecasts, AQI, alerts and city comparison." />
+  <meta property="og:type" content="website" />
+
+  <link rel="icon"
+    href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;🌤️&lt;/text&gt;&lt;/svg&gt;" />
+
+  <!-- Fonts: Space Grotesk (display/instrument), Inter (body), JetBrains Mono (data) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ============ BACKGROUND LAYERS (dynamic per weather) ============ -->
+  <div class="sky" id="skyLayer" aria-hidden="true">
+    <div class="sky__gradient"></div>
+    <div class="sky__stars" id="starsLayer"></div>
+    <div class="sky__clouds" id="cloudsLayer"></div>
+    <canvas id="precipCanvas" aria-hidden="true"></canvas>
+  </div>
+
+  <!-- ============ NAVIGATION ============ -->
+  <header class="nav" id="siteNav">
+    <div class="nav__inner">
+      <a href="#top" class="nav__brand" aria-label="WeatherSphere Pro home">
+        <span class="nav__brand-icon">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="19" stroke="currentColor" stroke-width="1.4" opacity="0.35" />
+            <circle cx="16" cy="22" r="7" fill="currentColor" opacity="0.9" />
+            <path d="M11 27h14a5 5 0 0 0 0-10 8 8 0 0 0-15.3-2.3" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" fill="none" />
+          </svg>
+        </span>
+        <span class="nav__brand-text">WeatherSphere<span class="nav__brand-pro">Pro</span></span>
+      </a>
+
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#dashboard">Dashboard</a>
+        <a href="#forecast">Forecast</a>
+        <a href="#about">About</a>
+        <a href="#features">Features</a>
+        <a href="#stack">Tech Stack</a>
+        <a href="#developer">Developer</a>
+      </nav>
+
+      <div class="nav__actions">
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="Toggle dark and light mode"
+          title="Toggle theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="4.2" />
+            <path
+              d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"
+              stroke-linecap="round" />
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <button class="nav__cta" id="navSearchBtn" type="button">Launch Console</button>
+      </div>
+
+      <button class="nav__burger" id="navBurger" type="button" aria-label="Open menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="top">
+    <div class="hero__inner">
+      <div class="hero__copy">
+        <p class="hero__eyebrow">Instrument-grade forecasting</p>
+        <h1 class="hero__title">
+          Real-Time Weather<br /><span class="hero__title-accent">Intelligence Dashboard.</span>
+        </h1>
+        <p class="hero__sub">
+          Monitor live weather conditions, air quality, forecasts and atmospheric
+          insights through a modern, data-driven dashboard — built solo, shipped like a product.
+        </p>
+
+        <div class="hero__cta-row">
+          <button type="button" class="hero__cta-primary" id="heroCtaLaunch">
+            Launch Dashboard
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <a href="#features" class="hero__cta-secondary">View Features</a>
+        </div>
+
+        <form class="hero__search" id="heroSearchForm" role="search" autocomplete="off">
+          <svg class="hero__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" stroke-linecap="round" />
+          </svg>
+          <input type="text" id="heroSearchInput" placeholder="Search a city — try “Tokyo” or “Mumbai”"
+            aria-label="Search city" />
+          <button type="button" class="hero__locate-btn" id="heroLocateBtn" title="Use my location"
+            aria-label="Use my current location">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button type="submit" class="hero__search-submit">Get Weather</button>
+        </form>
+
+        <div class="hero__chips" id="heroSuggestChips">
+          <span class="hero__chips-label">Trending:</span>
+          <button class="chip" data-city="Mumbai">Mumbai</button>
+          <button class="chip" data-city="New York">New York</button>
+          <button class="chip" data-city="London">London</button>
+          <button class="chip" data-city="Tokyo">Tokyo</button>
+          <button class="chip" data-city="Dubai">Dubai</button>
+        </div>
+      </div>
+
+      <div class="hero__console" id="heroConsole" aria-live="polite">
+        <div class="console-card glass" id="consoleCard">
+          <div class="console-card__top">
+            <div>
+              <p class="console-card__loc" id="consoleLocation">Detecting location…</p>
+              <p class="console-card__date" id="consoleDate">—</p>
+            </div>
+            <div class="console-card__icon" id="consoleIcon">
+              <div class="loader-ring"></div>
+            </div>
+          </div>
+
+          <div class="console-card__temp">
+            <span class="console-card__temp-value" id="consoleTemp">--</span>
+            <span class="console-card__temp-unit">°<span id="consoleUnitLabel">C</span></span>
+          </div>
+          <p class="console-card__desc" id="consoleDesc">Fetching live conditions…</p>
+          <p class="console-card__feels">Feels like <span id="consoleFeels">--°</span></p>
+
+          <div class="console-card__divider"></div>
+
+          <div class="console-card__grid">
+            <div class="console-stat">
+              <span class="console-stat__label">Humidity</span>
+              <span class="console-stat__value" id="consoleHumidity">--%</span>
+            </div>
+            <div class="console-stat">
+              <span class="console-stat__label">Wind</span>
+              <span class="console-stat__value" id="consoleWind">-- km/h</span>
+            </div>
+            <div class="console-stat">
+              <span class="console-stat__label">UV Index</span>
+              <span class="console-stat__value" id="consoleUV">--</span>
+            </div>
+          </div>
+
+          <button class="console-card__unit-toggle" id="unitToggle" type="button">Switch to °F</button>
+        </div>
+
+        <div class="console-orbit" aria-hidden="true">
+          <span class="orbit-dot orbit-dot--1"></span>
+          <span class="orbit-dot orbit-dot--2"></span>
+          <span class="orbit-dot orbit-dot--3"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero__scroll-cue" aria-hidden="true">
+      <span>Scroll for full console</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M12 4v16M6 14l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </div>
+  </section>
+
+  <!-- ============ STATUS BAR (loading/error/last updated) ============ -->
+  <div class="status-bar" id="statusBar" role="status" aria-live="polite"></div>
+
+  <!-- ============ MAIN DASHBOARD ============ -->
+  <main id="dashboard" class="dashboard">
+
+    <!-- Toolbar: recent + favorites + compare -->
+    <section class="toolbar glass-panel">
+      <div class="toolbar__group">
+        <h3 class="toolbar__title">Recent</h3>
+        <div class="toolbar__pills" id="recentPills">
+          <span class="toolbar__empty">No recent searches yet</span>
+        </div>
+      </div>
+      <div class="toolbar__divider" aria-hidden="true"></div>
+      <div class="toolbar__group">
+        <h3 class="toolbar__title">Favorites</h3>
+        <div class="toolbar__pills" id="favoritePills">
+          <span class="toolbar__empty">Star a city to save it</span>
+        </div>
+      </div>
+      <div class="toolbar__divider" aria-hidden="true"></div>
+      <div class="toolbar__group toolbar__group--action">
+        <button class="toolbar__favorite-btn" id="favoriteToggleBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 3.5l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6L12 3.5Z"
+              stroke-linejoin="round" />
+          </svg>
+          <span id="favoriteToggleLabel">Save city</span>
+        </button>
+        <button class="toolbar__compare-btn" id="compareToggleBtn" type="button">Compare cities</button>
+      </div>
+    </section>
+
+    <!-- Bento grid: highlights -->
+    <section class="bento" aria-label="Weather highlights">
+      <article class="bento-card bento-card--wide glass-panel" id="cardFeelsLike">
+        <header class="bento-card__head">
+          <span class="bento-card__label">Feels Like</span>
+          <svg class="bento-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M12 14.5a2.5 2.5 0 1 0 2.5 2.5" />
+            <path d="M12 14.5V4.8a2 2 0 1 0-4 0" stroke-linecap="round" />
+            <path d="M14.5 17a2.5 2.5 0 1 1-5 0" stroke-linecap="round" />
+          </svg>
+        </header>
+        <p class="bento-card__value" id="feelsLikeValue">--°</p>
+        <p class="bento-card__sub" id="feelsLikeSub">Calculating perceived temperature…</p>
+      </article>
+
+      <article class="bento-card glass-panel" id="cardHumidity">
+        <header class="bento-card__head">
+          <span class="bento-card__label">Humidity</span>
+          <svg class="bento-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M12 3s6 6.8 6 11a6 6 0 0 1-12 0c0-4.2 6-11 6-11Z" stroke-linejoin="round" />
+          </svg>
+        </header>
+        <p class="bento-card__value" id="humidityValue">--%</p>
+        <div class="bento-card__bar"><span id="humidityBar" style="width:0%"></span></div>
+      </article>
+
+      <article class="bento-card glass-panel" id="cardWind">
+        <header class="bento-card__head">
+          <span class="bento-card__label">Wind</span>
+        </header>
+        <div class="compass" id="windCompass">
+          <div class="compass__ring">
+            <span class="compass__n">N</span><span class="compass__e">E</span><span class="compass__s">S</span><span
+              class="compass__w">W</span>
+            <div class="compass__needle" id="compassNeedle"></div>
+          </div>
+        </div>
+        <p class="bento-card__value bento-card__value--sm"><span id="windSpeedValue">--</span> km/h</p>
+        <p class="bento-card__sub" id="windDirLabel">--</p>
+      </article>
+
+      <article class="bento-card glass-panel" id="cardUV">
+        <header class="bento-card__head">
+          <span class="bento-card__label">UV Index</span>
+        </header>
+        <div class="gauge" id="uvGauge">
+          <svg viewBox="0 0 120 70">
+            <path class="gauge__track" d="M10 65 A50 50 0 0 1 110 65" />
+            <path class="gauge__fill" id="uvGaugeFill" d="M10 65 A50 50 0 0 1 110 65" />
+          </svg>
+          <span class="gauge__value" id="uvValue">--</span>
+          <span class="gauge__tag" id="uvTag">—</span>
+        </div>
+      </article>
+
+      <article class="bento-card glass-panel" id="cardPressure">
+        <header class="bento-card__head">
+          <span class="bento-card__label">Pressure</span>
+          <svg class="bento-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 12l4-2.3" stroke-linecap="round" />
+          </svg>
+        </header>
+        <p class="bento-card__value" id="pressureValue">-- hPa</p>
+        <p class="bento-card__sub" id="pressureTrend">Stable</p>
+      </article>
+
+      <article class="bento-card glass-panel" id="cardVisibility">
+        <header class="bento-card__head">
+          <span class="bento-card__label">Visibility</span>
+          <svg class="bento-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6Z" stroke-linejoin="round" />
+            <circle cx="12" cy="12" r="2.6" />
+          </svg>
+        </header>
+        <p class="bento-card__value" id="visibilityValue">-- km</p>
+        <p class="bento-card__sub" id="visibilityTag">Clear conditions</p>
+      </article>
+
+      <article class="bento-card glass-panel" id="cardRain">
+        <header class="bento-card__head">
+          <span class="bento-card__label">Rain Probability</span>
+          <svg class="bento-card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M7 16.5a4.5 4.5 0 0 1 .8-8.9 5.5 5.5 0 0 1 10.6 1.6A4 4 0 0 1 18 17H7Z" />
+            <path d="M9 19l-1 2M13 19l-1 2M17 19l-1 2" stroke-linecap="round" />
+          </svg>
+        </header>
+        <p class="bento-card__value" id="rainProbValue">--%</p>
+        <p class="bento-card__sub">next hour</p>
+      </article>
+
+      <article class="bento-card bento-card--sun glass-panel" id="cardSun">
+        <header class="bento-card__head">
+          <span class="bento-card__label">Sun</span>
+        </header>
+        <div class="sun-arc">
+          <svg viewBox="0 0 160 90">
+            <path class="sun-arc__track" d="M10 80 A70 70 0 0 1 150 80" />
+            <circle class="sun-arc__dot" id="sunArcDot" cx="10" cy="80" r="5" />
+          </svg>
+          <div class="sun-arc__times">
+            <div><span class="sun-arc__label">Sunrise</span><span id="sunriseValue">--:--</span></div>
+            <div><span class="sun-arc__label">Sunset</span><span id="sunsetValue">--:--</span></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Alerts -->
+    <section class="alerts" id="alertsSection" aria-label="Weather alerts" hidden>
+      <div class="alerts__banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path
+            d="M12 9v4M12 17h.01M10.3 3.9 2.6 18a1.8 1.8 0 0 0 1.5 2.7h15.8a1.8 1.8 0 0 0 1.5-2.7L13.7 3.9a1.8 1.8 0 0 0-3.4 0Z"
+            stroke-linejoin="round" />
+        </svg>
+        <span id="alertsText">No active alerts</span>
+      </div>
+    </section>
+
+    <!-- AQI -->
+    <section class="aqi-section glass-panel" aria-label="Air quality index">
+      <div class="aqi-section__main">
+        <h2 class="section-heading section-heading--inline">Air Quality Index</h2>
+        <div class="aqi-dial" id="aqiDial">
+          <svg viewBox="0 0 140 140">
+            <circle class="aqi-dial__track" cx="70" cy="70" r="58" />
+            <circle class="aqi-dial__fill" id="aqiDialFill" cx="70" cy="70" r="58" />
+          </svg>
+          <div class="aqi-dial__center">
+            <span class="aqi-dial__value" id="aqiValue">--</span>
+            <span class="aqi-dial__tag" id="aqiTag">—</span>
+          </div>
+        </div>
+        <p class="aqi-section__recommendation" id="aqiRecommendation">Fetching air quality data…</p>
+      </div>
+      <div class="aqi-section__breakdown">
+        <div class="aqi-pollutant"><span>PM2.5</span><strong id="pm25Value">--</strong></div>
+        <div class="aqi-pollutant"><span>PM10</span><strong id="pm10Value">--</strong></div>
+        <div class="aqi-pollutant"><span>O₃</span><strong id="o3Value">--</strong></div>
+        <div class="aqi-pollutant"><span>NO₂</span><strong id="no2Value">--</strong></div>
+        <div class="aqi-pollutant"><span>SO₂</span><strong id="so2Value">--</strong></div>
+        <div class="aqi-pollutant"><span>CO</span><strong id="coValue">--</strong></div>
+      </div>
+    </section>
+
+    <!-- Hourly forecast -->
+    <section class="hourly" aria-label="Hourly forecast">
+      <h2 class="section-heading">Next 24 Hours</h2>
+      <div class="hourly__track" id="hourlyTrack">
+        <!-- populated by JS -->
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="charts" id="charts">
+      <div class="chart-card glass-panel">
+        <h3 class="chart-card__title">Temperature Trend</h3>
+        <div class="chart-card__canvas-wrap"><canvas id="tempChart"></canvas></div>
+      </div>
+      <div class="chart-card glass-panel">
+        <h3 class="chart-card__title">Humidity</h3>
+        <div class="chart-card__canvas-wrap"><canvas id="humidityChart"></canvas></div>
+      </div>
+      <div class="chart-card glass-panel">
+        <h3 class="chart-card__title">Wind Speed</h3>
+        <div class="chart-card__canvas-wrap"><canvas id="windChart"></canvas></div>
+      </div>
+      <div class="chart-card glass-panel">
+        <h3 class="chart-card__title">Rain Probability</h3>
+        <div class="chart-card__canvas-wrap"><canvas id="rainChart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- 7-day forecast -->
+    <section class="forecast" id="forecast" aria-label="7-day forecast">
+      <h2 class="section-heading">7-Day Forecast</h2>
+      <div class="forecast__grid" id="forecastGrid">
+        <!-- populated by JS -->
+      </div>
+    </section>
+
+    <!-- Weather Insights -->
+    <section class="insights" id="insights" aria-label="Weather insights">
+      <h2 class="section-heading">Weather Insights</h2>
+      <div class="insights__grid" id="insightsGrid">
+        <!-- populated by JS -->
+      </div>
+    </section>
+
+    <!-- Compare panel -->
+    <section class="compare glass-panel" id="comparePanel" hidden aria-label="Compare two cities">
+      <div class="compare__head">
+        <h2 class="section-heading section-heading--inline">Compare Cities</h2>
+        <button class="icon-btn" id="closeCompareBtn" aria-label="Close compare panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M6 6l12 12M18 6 6 18" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      <div class="compare__inputs">
+        <input type="text" id="compareCityA" placeholder="City A — e.g. Mumbai" />
+        <span class="compare__vs">VS</span>
+        <input type="text" id="compareCityB" placeholder="City B — e.g. London" />
+        <button id="compareRunBtn" class="hero__search-submit">Compare</button>
+      </div>
+      <div class="compare__results" id="compareResults"></div>
+    </section>
+
+  </main>
+
+  <!-- ============ ABOUT PROJECT ============ -->
+  <section class="about" id="about">
+    <div class="about__inner">
+      <div class="about__copy">
+        <p class="hero__eyebrow">About the project</p>
+        <h2 class="section-title">Why I built a weather console instead of a weather “app.”</h2>
+        <p class="about__text">
+          Most student weather widgets stop at a temperature and an icon. WeatherSphere Pro
+          is built like an actual operations console — gauges for UV and wind direction,
+          a live AQI dial, hourly and 7-day projections, and a side-by-side city comparison
+          mode — to demonstrate real dashboard engineering, not just an API call wrapped in a card.
+        </p>
+        <p class="about__text">
+          Every metric on this page — humidity, pressure, visibility, rain probability, sunrise
+          and sunset — comes from a single live data source, normalized and rendered with vanilla
+          JavaScript and Chart.js. No frameworks, no build step: just HTML, CSS and JS doing the work.
+        </p>
+        <div class="about__stats">
+          <div><strong>15+</strong><span>Live metrics</span></div>
+          <div><strong>7</strong><span>Day forecast</span></div>
+          <div><strong>0</strong><span>Frameworks used</span></div>
+        </div>
+      </div>
+      <div class="about__visual" aria-hidden="true">
+        <div class="about__orbit-card glass-panel">
+          <span class="about__orbit-title">Data Pipeline</span>
+          <ul class="about__pipeline">
+            <li><span>01</span>Geolocation / search query</li>
+            <li><span>02</span>Geocoding → lat/long resolve</li>
+            <li><span>03</span>Forecast + AQI fetch (parallel)</li>
+            <li><span>04</span>Normalize units &amp; cache</li>
+            <li><span>05</span>Render gauges, charts, cards</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURES ============ -->
+  <section class="features" id="features">
+    <div class="features__head">
+      <p class="hero__eyebrow">Capabilities</p>
+      <h2 class="section-title">Everything a forecast console should have.</h2>
+    </div>
+    <div class="features__grid">
+      <article class="feature-card glass-panel">
+        <div class="feature-card__icon">🌍</div>
+        <h3>Geolocation-aware</h3>
+        <p>Detects your current position on load and falls back gracefully to manual search.</p>
+      </article>
+      <article class="feature-card glass-panel">
+        <div class="feature-card__icon">📊</div>
+        <h3>Live Chart.js trends</h3>
+        <p>Temperature, humidity and wind rendered as interactive, theme-aware charts.</p>
+      </article>
+      <article class="feature-card glass-panel">
+        <div class="feature-card__icon">🫧</div>
+        <h3>Real-time AQI dial</h3>
+        <p>Pollutant breakdown — PM2.5, PM10, O₃, NO₂, SO₂, CO — with a color-coded health dial.</p>
+      </article>
+      <article class="feature-card glass-panel">
+        <div class="feature-card__icon">⭐</div>
+        <h3>Favorites &amp; history</h3>
+        <p>Recent searches and starred cities persist locally between visits via localStorage.</p>
+      </article>
+      <article class="feature-card glass-panel">
+        <div class="feature-card__icon">⚖️</div>
+        <h3>City comparison</h3>
+        <p>Place two cities side by side across every major metric in one comparison view.</p>
+      </article>
+      <article class="feature-card glass-panel">
+        <div class="feature-card__icon">🎨</div>
+        <h3>Dynamic atmosphere</h3>
+        <p>Background gradient, clouds and precipitation react live to current conditions.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ TECH STACK ============ -->
+  <section class="stack" id="stack">
+    <div class="stack__head">
+      <p class="hero__eyebrow">Under the hood</p>
+      <h2 class="section-title">Built with fundamentals, on purpose.</h2>
+    </div>
+    <div class="stack__grid">
+      <div class="stack-card glass-panel"><span>HTML5</span><small>Semantic structure</small></div>
+      <div class="stack-card glass-panel"><span>CSS3</span><small>Glassmorphism + Grid</small></div>
+      <div class="stack-card glass-panel"><span>JavaScript</span><small>Vanilla ES6+</small></div>
+      <div class="stack-card glass-panel"><span>Fetch API</span><small>Async data layer</small></div>
+      <div class="stack-card glass-panel"><span>Chart.js</span><small>Data visualization</small></div>
+      <div class="stack-card glass-panel"><span>Open-Meteo</span><small>Weather + AQI source</small></div>
+      <div class="stack-card glass-panel"><span>LocalStorage</span><small>Favorites &amp; history</small></div>
+      <div class="stack-card glass-panel"><span>Geolocation API</span><small>Auto-detect position</small></div>
+    </div>
+  </section>
+
+  <!-- ============ DEVELOPER ============ -->
+  <section class="developer" id="developer">
+    <div class="developer__card glass-panel">
+      <div class="developer__avatar" aria-hidden="true">SP</div>
+      <div class="developer__info">
+        <p class="hero__eyebrow">Built &amp; maintained by</p>
+        <h2 class="developer__name">Sumit Prajapati</h2>
+        <p class="developer__role">Computer Science &amp; Data Science Student</p>
+        <p class="developer__bio">
+          I build production-style frontend projects to learn how real dashboards are
+          engineered — not just how they look. WeatherSphere Pro is part of my internship
+          and placement portfolio.
+        </p>
+        <div class="developer__links">
+          <a href="https://github.com/" target="_blank" rel="noopener noreferrer"
+            class="developer__btn developer__btn--github">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.6-4-1.6-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.6 3.3-1.2 3.3-1.2.6 1.6.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5Z" />
+            </svg>
+            GitHub
+          </a>
+          <a href="https://linkedin.com/" target="_blank" rel="noopener noreferrer"
+            class="developer__btn developer__btn--linkedin">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M20.4 20.4h-3.6v-5.6c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9v5.7H9.3V9h3.5v1.6h.1c.5-.9 1.7-1.8 3.4-1.8 3.6 0 4.3 2.4 4.3 5.5v6.1ZM5.3 7.4a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2ZM7.1 20.4H3.6V9h3.5v11.4Z" />
+            </svg>
+            LinkedIn
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <span class="nav__brand-icon">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="19" stroke="currentColor" stroke-width="1.4" opacity="0.35" />
+            <circle cx="16" cy="22" r="7" fill="currentColor" opacity="0.9" />
+            <path d="M11 27h14a5 5 0 0 0 0-10 8 8 0 0 0-15.3-2.3" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" fill="none" />
+          </svg>
+        </span>
+        <div>
+          <p class="footer__brand-name">WeatherSphere Pro</p>
+          <p class="footer__brand-tag">A weather console, engineered like a product.</p>
+        </div>
+      </div>
+
+      <div class="footer__links">
+        <div class="footer__col">
+          <h4>Project</h4>
+          <a href="#dashboard">Dashboard</a>
+          <a href="#about">About</a>
+          <a href="#features">Features</a>
+          <a href="#stack">Tech Stack</a>
+        </div>
+        <div class="footer__col">
+          <h4>Connect</h4>
+          <a href="https://github.com/" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+          <a href="https://linkedin.com/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+          <a href="mailto:sumit.prajapati@example.com">Email →</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <p>© <span id="footerYear"></span> WeatherSphere Pro. Built for learning, designed for portfolio.</p>
+      <p>Data via Open-Meteo · No API key required</p>
+    </div>
+  </footer>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="alert" aria-live="assertive"></div>
+
+  <!-- Chart.js (CDN) -->
+  <!-- Chart.js — bundled locally in /vendor so charts never depend on
+       a CDN connection, ad-blockers, or network restrictions. -->
+  <script src="vendor/chart.umd.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
